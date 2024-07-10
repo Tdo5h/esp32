@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Switch Control</title>
+    <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-database-compat.js"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "", // Leave empty if you don't have a Web API Key
+            authDomain: "relays-c3f46.firebaseapp.com",
+            databaseURL: "https://relays-c3f46-default-rtdb.firebaseio.com",
+            projectId: "relays-c3f46",
+            storageBucket: "relays-c3f46.appspot.com",
+            messagingSenderId: "842934065441",
+            appId: "", // Leave empty if you don't have an App ID
+            measurementId: "" // Leave empty if you don't have a Measurement ID
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let lastSwitchOn = null;
+        let lastConnectedTime = Date.now();
+
+        function sendSwitchState(switchNumber, state) {
+            if (state) {
+                // Turn off the last switch that was on
+                if (lastSwitchOn !== null && lastSwitchOn !== switchNumber) {
+                    database.ref('esp32/relays/' + lastSwitchOn).set(1);
+                    document.getElementById('switch' + lastSwitchOn).checked = false;
+                    document.getElementById('pinState' + lastSwitchOn).innerText = 'HIGH';
+                }
+                lastSwitchOn = switchNumber;
+            } else {
+                lastSwitchOn = null;
+            }
+            const value = state ? 0 : 1; // Reverse the state
+            database.ref('esp32/relays/' + switchNumber).set(value);
+        }
+
+        function sendTimerValue() {
+            const timerValue = document.getElementById('timerInput').value;
+            database.ref('esp32/timer').set(parseInt(timerValue));
+        }
+
+        function setupSwitchListeners() {
+            for (let i = 1; i <= 8; i++) {
+                database.ref('esp32/relays/' + i).on('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        const value = snapshot.val();
+                        document.getElementById('switch' + i).checked = value === 0;
+                        document.getElementById('pinState' + i).innerText = value === 0 ? 'LOW' : 'HIGH';
+                        if (value === 0) {
+                            lastSwitchOn = i;
+                        }
+                    } else {
+                        console.error("No data available for switch " + i);
+                    }
+                });
+            }
+        }
+
+        function setupTimerListener() {
+            database.ref('esp32/timer').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const timerValue = snapshot.val();
+                    document.getElementById('currentTimerValue').innerText = timerValue;
+                } else {
+                    console.error("No data available for timer");
+                }
+            });
+        }
+
+        function setupConnectionListener() {
+            database.ref('esp32/connected').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    lastConnectedTime = Date.now();
+                    document.getElementById('connectionStatus').classList.remove('red');
+                    document.getElementById('connectionStatus').classList.add('green');
+                } else {
+                    console.error("No data available for connection status");
+                }
+            });
+
+            setInterval(() => {
+                if (Date.now() - lastConnectedTime > 12000) {
+                    document.getElementById('connectionStatus').classList.remove('green');
+                    document.getElementById('connectionStatus').classList.add('red');
+                }
+            }, 1000);
+        }
+
+        // Setup listeners when the page loads
+        window.onload = function() {
+            setupSwitchListeners();
+            setupTimerListener();
+            setupConnectionListener();
+            // Update the "connected" file in Firebase
+            database.ref('esp32/connected').set(1);
+        };
+    </script>
+    <style>
+        .switch {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .switch input {
+            margin-right: 10px;
+        }
+        .status {
+            margin-left: 10px;
+        }
+        .connection-dot {
+            width: 18px; /* 20% bigger than 15px */
+            height: 18px; /* 20% bigger than 15px */
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+            border: 1px solid black; /* Black border */
+        }
+        .green {
+            background-color: #00FF00; /* Brighter green */
+        }
+        .red {
+            background-color: #FF0000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Switch Control <span id="connectionStatus" class="connection-dot red"></span></h1>
+    <div class="switch">
+        <input type="checkbox" id="switch1" onclick="sendSwitchState(1, this.checked)">
+        <label for="switch1">Switch 1</label>
+        <span class="status" id="pinState1">HIGH</span>
+    </div>
+    <div class="switch">
+        <input type="checkbox" id="switch2" onclick="sendSwitchState(2, this.checked)">
+        <label for="switch2">Switch 2</label>
+        <span class="status" id="pinState2">HIGH</span>
+    </div>
+    <div class="switch">
+        <input type="checkbox" id="switch3" onclick="sendSwitchState(3, this.checked)">
+        <label for="switch3">Switch 3</label>
+        <span class="status" id="pinState3">HIGH</span>
+    </div>
+    <div class="switch">
+        <input type="checkbox" id="switch4" onclick="sendSwitchState(4, this.checked)">
+        <label for="switch4">Switch 4</label>
+        <span class="status" id="pinState4">HIGH</span>
+    </div>
+    <div class="switch">
+        <input type="checkbox" id="switch5" onclick="sendSwitchState(5, this.checked)">
+        <label for="switch5">Switch 5</label>
+        <span class="status" id="pinState5">HIGH</span>
+    </div>
+    <div class="switch">
+        <input type="checkbox" id="switch6" onclick="sendSwitchState(6, this.checked)">
+        <label for="switch6">Switch 6</label>
+        <span class="status" id="pinState6">HIGH</span>
+    </div>
+    <div class="switch">
+        <input type="checkbox" id="switch7" onclick="sendSwitchState(7, this.checked)">
+        <label for="switch7">Switch 7</label>
+        <span class="status" id="pinState7">HIGH</span>
+    </div>
+    <div class="switch">
+        <input type="checkbox" id="switch8" onclick="sendSwitchState(8, this.checked)">
+        <label for="switch8">Switch 8</label>
+        <span class="status" id="pinState8">HIGH</span>
+    </div>
+    <div>
+        <h2>Set Timer</h2>
+        <input type="number" id="timerInput" placeholder="Enter time in seconds">
+        <button onclick="sendTimerValue()">Set Timer</button>
+    </div>
+    <div>
+        <h2>Current Timer Value</h2>
+        <p id="currentTimerValue">0</p>
+    </div>
+</body>
+</html>
