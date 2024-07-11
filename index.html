@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Switch Control</title>
+    <link rel="icon" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
     <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-database-compat.js"></script>
     <script>
@@ -32,7 +34,6 @@
                 if (lastSwitchOn !== null && lastSwitchOn !== switchNumber) {
                     database.ref('esp32/relays/' + lastSwitchOn).set(1);
                     document.getElementById('switch' + lastSwitchOn).checked = false;
-                    document.getElementById('pinState' + lastSwitchOn).innerText = 'HIGH';
                 }
                 lastSwitchOn = switchNumber;
             } else {
@@ -44,7 +45,8 @@
 
         function sendTimerValue() {
             const timerValue = document.getElementById('timerInput').value;
-            database.ref('esp32/timer').set(parseInt(timerValue));
+            const totalSeconds = parseInt(timerValue) * 60; // Convert minutes to seconds
+            database.ref('esp32/timer').set(totalSeconds);
         }
 
         function setupSwitchListeners() {
@@ -53,7 +55,6 @@
                     if (snapshot.exists()) {
                         const value = snapshot.val();
                         document.getElementById('switch' + i).checked = value === 0;
-                        document.getElementById('pinState' + i).innerText = value === 0 ? 'LOW' : 'HIGH';
                         if (value === 0) {
                             lastSwitchOn = i;
                         }
@@ -101,6 +102,8 @@
             setupConnectionListener();
             // Update the "connected" file in Firebase
             database.ref('esp32/connected').set(1);
+            // Set default timer value to 15 minutes
+            document.getElementById('timerInput').value = "15";
         };
     </script>
     <style>
@@ -110,20 +113,18 @@
             background-size: cover;
             background-position: center;
             font-family: Arial, sans-serif;
-            color: white;
+            color: black; /* Change text color to black */
             text-align: center;
-            padding: 50px;
+            padding: 20px; /* Reduced padding */
         }
-        .switch {
+        .header {
             display: flex;
             align-items: center;
-            margin: 10px 0;
+            justify-content: center;
+            margin-bottom: 20px;
         }
-        .switch input {
-            margin-right: 10px;
-        }
-        .status {
-            margin-left: 10px;
+        .header h1 {
+            margin: 0;
         }
         .connection-dot {
             width: 18px; /* 20% bigger than 15px */
@@ -139,55 +140,83 @@
         .red {
             background-color: #FF0000;
         }
+        .switch {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .switch input {
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1>Garden Control <span id="connectionStatus" class="connection-dot red"></span></h1>
+    <div class="header">
+        <h1>Garden Control</h1>
+        <span id="connectionStatus" class="connection-dot red"></span>
+    </div>
     <div class="switch">
         <input type="checkbox" id="switch1" onclick="sendSwitchState(1, this.checked)">
-        <label for="switch1">Font Garden</label>
-        <span class="status" id="pinState1">HIGH</span>
+        <label for="switch1">Front Garden</label>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch2" onclick="sendSwitchState(2, this.checked)">
         <label for="switch2">Side Garden 1</label>
-        <span class="status" id="pinState2">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch3" onclick="sendSwitchState(3, this.checked)">
         <label for="switch3">Side Garden 2</label>
-        <span class="status" id="pinState3">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch4" onclick="sendSwitchState(4, this.checked)">
         <label for="switch4">Back Garden 1</label>
-        <span class="status" id="pinState4">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch5" onclick="sendSwitchState(5, this.checked)">
         <label for="switch5">Back Garden 2</label>
-        <span class="status" id="pinState5">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch6" onclick="sendSwitchState(6, this.checked)">
         <label for="switch6">Back Lawn 1</label>
-        <span class="status" id="pinState6">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch7" onclick="sendSwitchState(7, this.checked)">
         <label for="switch7">Back Lawn 2</label>
-        <span class="status" id="pinState7">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch8" onclick="sendSwitchState(8, this.checked)">
-        <label for="switch8">Side Lawn </label>
-        <span class="status" id="pinState8">HIGH</span>
+        <label for="switch8">Side Lawn</label>
     </div>
     <div>
         <h2>Set Timer</h2>
-        <input type="number" id="timerInput" placeholder="Enter Time">
-        <button onclick="sendTimerValue()">Set Casade Timer</button>
+        <select id="timerInput">
+            <!-- Generate options from 1 to 60 minutes -->
+           
+            <option value="5">5 minutes</option>
+         
+            <option value="10">10 minutes</option>
+           
+            <option value="15" selected>15 minutes</option> <!-- Default value -->
+         
+            <option value="20">20 minutes</option>
+       
+            <option value="25">25 minutes</option>
+         
+            <option value="30">30 minutes</option>
+           
+            <option value="35">35 minutes</option>
+         
+            <option value="40">40 minutes</option>
+           
+            <option value="45">45 minutes</option>
+        
+            <option value="50">50 minutes</option>
+            
+            <option value="55">55 minutes</option>
+          
+            <option value="60">60 minutes</option>
+        </select>
+        <button onclick="sendTimerValue()">Set Cascade Timer</button>
     </div>
-    
 </body>
 </html>
