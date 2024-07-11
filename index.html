@@ -142,55 +142,52 @@
     </style>
 </head>
 <body>
-    <h1>Switch Control <span id="connectionStatus" class="connection-dot red"></span></h1>
+    <h1>Garden Control <span id="connectionStatus" class="connection-dot red"></span></h1>
     <div class="switch">
         <input type="checkbox" id="switch1" onclick="sendSwitchState(1, this.checked)">
-        <label for="switch1">Switch 1</label>
+        <label for="switch1">Font Garden</label>
         <span class="status" id="pinState1">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch2" onclick="sendSwitchState(2, this.checked)">
-        <label for="switch2">Switch 2</label>
+        <label for="switch2">Side Garden 1</label>
         <span class="status" id="pinState2">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch3" onclick="sendSwitchState(3, this.checked)">
-        <label for="switch3">Switch 3</label>
+        <label for="switch3">Side Garden 2</label>
         <span class="status" id="pinState3">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch4" onclick="sendSwitchState(4, this.checked)">
-        <label for="switch4">Switch 4</label>
+        <label for="switch4">Back Garden 1</label>
         <span class="status" id="pinState4">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch5" onclick="sendSwitchState(5, this.checked)">
-        <label for="switch5">Switch 5</label>
+        <label for="switch5">Back Garden 2</label>
         <span class="status" id="pinState5">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch6" onclick="sendSwitchState(6, this.checked)">
-        <label for="switch6">Switch 6</label>
+        <label for="switch6">Back Lawn 1</label>
         <span class="status" id="pinState6">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch7" onclick="sendSwitchState(7, this.checked)">
-        <label for="switch7">Switch 7</label>
+        <label for="switch7">Back Lawn 2</label>
         <span class="status" id="pinState7">HIGH</span>
     </div>
     <div class="switch">
         <input type="checkbox" id="switch8" onclick="sendSwitchState(8, this.checked)">
-        <label for="switch8">Switch 8</label>
+        <label for="switch8">Side Lawn </label>
         <span class="status" id="pinState8">HIGH</span>
     </div>
     <div>
         <h2>Set Timer</h2>
-        <input type="number" id="timerInput" placeholder="Enter time in seconds">
-        <button onclick="sendTimerValue()">Set Timer</button>
+        <input type="number" id="timerInput" placeholder="Enter Time">
+        <button onclick="sendTimerValue()">Set Casade Timer</button>
     </div>
-    <div>
-        <h2>Current Timer Value</h2>
-        <p id="currentTimerValue">0</p>
-    </div>
+    
 </body>
 </html>
