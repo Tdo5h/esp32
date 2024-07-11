@@ -144,6 +144,7 @@
             display: flex;
             align-items: center;
             margin: 10px 0;
+            font-size: 120%; /* Increase font size by 20% */
         }
         .switch input {
             margin-right: 10px;
@@ -155,40 +156,39 @@
         <h1>Garden Control</h1>
         <span id="connectionStatus" class="connection-dot red"></span>
     </div>
-    <div class="switch">
+    <div class="switch" style="font-size: 120%;">
         <input type="checkbox" id="switch1" onclick="sendSwitchState(1, this.checked)">
         <label for="switch1">Front Garden</label>
     </div>
-    <div class="switch">
+    <div class="switch" style="font-size: 120%;">
         <input type="checkbox" id="switch2" onclick="sendSwitchState(2, this.checked)">
         <label for="switch2">Side Garden 1</label>
     </div>
-    <div class="switch">
+    <div class="switch" style="font-size: 120%;">
         <input type="checkbox" id="switch3" onclick="sendSwitchState(3, this.checked)">
         <label for="switch3">Side Garden 2</label>
     </div>
-    <div class="switch">
+    <div class="switch" style="font-size: 120%;">
         <input type="checkbox" id="switch4" onclick="sendSwitchState(4, this.checked)">
         <label for="switch4">Back Garden 1</label>
     </div>
-    <div class="switch">
+    <div class="switch" style="font-size: 120%;">
         <input type="checkbox" id="switch5" onclick="sendSwitchState(5, this.checked)">
         <label for="switch5">Back Garden 2</label>
     </div>
-    <div class="switch">
+    <div class="switch" style="font-size: 120%;">
         <input type="checkbox" id="switch6" onclick="sendSwitchState(6, this.checked)">
         <label for="switch6">Back Lawn 1</label>
     </div>
-    <div class="switch">
+    <div class="switch" style="font-size: 120%;">
         <input type="checkbox" id="switch7" onclick="sendSwitchState(7, this.checked)">
         <label for="switch7">Back Lawn 2</label>
     </div>
-    <div class="switch">
+    <div class="switch" style="font-size: 120%;">
         <input type="checkbox" id="switch8" onclick="sendSwitchState(8, this.checked)">
         <label for="switch8">Side Lawn</label>
     </div>
     <div>
-        
         <h2>Set Timer</h2>
         <select id="timerInput">
             <!-- Generate options from 1 to 60 minutes -->
@@ -206,3 +206,6 @@
             <option value="60">60 minutes</option>
         </select>
         <button style="color: black; font-size: 140%;" onclick="sendTimerValue()">Set Cascade Timer</button>
+    </div>
+</body>
+</html>
