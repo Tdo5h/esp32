@@ -27,6 +27,7 @@
 
         let lastSwitchOn = null;
         let lastConnectedTime = Date.now();
+        let countdownInterval;
 
         function sendSwitchState(switchNumber, state) {
             if (state) {
@@ -34,10 +35,13 @@
                 if (lastSwitchOn !== null && lastSwitchOn !== switchNumber) {
                     database.ref('esp32/relays/' + lastSwitchOn).set(1);
                     document.getElementById('switch' + lastSwitchOn).checked = false;
+                    document.getElementById('countdownDisplay' + lastSwitchOn).innerText = ''; // Clear previous timer
                 }
                 lastSwitchOn = switchNumber;
+                updateCountdownDisplay(switchNumber); // Check timestamp in Firebase and start countdown
             } else {
                 lastSwitchOn = null;
+                document.getElementById('countdownDisplay' + switchNumber).innerText = ''; // Clear timer when switch is turned off
             }
             const value = state ? 0 : 1; // Reverse the state
             database.ref('esp32/relays/' + switchNumber).set(value);
@@ -46,24 +50,70 @@
         function sendTimerValue() {
             const timerValue = document.getElementById('timerInput').value;
             const totalSeconds = parseInt(timerValue) * 60; // Convert minutes to seconds
+
             database.ref('esp32/timer').set(totalSeconds);
+            database.ref('esp32/timer2').set(totalSeconds); // Update timer2 as well
+            localStorage.setItem('cascadeTimer', timerValue); // Save to localStorage
+
+            if (lastSwitchOn !== null) {
+                startCountdown(totalSeconds, lastSwitchOn); // Restart countdown for the current switch
+            }
+        }
+
+        function startCountdown(totalSeconds, switchNumber) {
+            clearInterval(countdownInterval); // Clear any existing interval
+
+            countdownInterval = setInterval(() => {
+                if (totalSeconds <= 0 || !document.getElementById('switch' + switchNumber).checked) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('countdownDisplay' + switchNumber).innerText = '';
+                    return;
+                }
+
+                totalSeconds--;
+                document.getElementById('countdownDisplay' + switchNumber).innerText = formatTime(totalSeconds);
+            }, 1000);
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+
+        function updateCountdownDisplay(switchNumber) {
+            database.ref('esp32/timestamp/' + switchNumber).once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const remainingSeconds = snapshot.val();
+                    if (remainingSeconds > 0 && document.getElementById('switch' + switchNumber).checked) {
+                        startCountdown(remainingSeconds, switchNumber);
+                    } else {
+                        document.getElementById('countdownDisplay' + switchNumber).innerText = '';
+                    }
+                } else {
+                    console.error("No timestamp available for switch " + switchNumber);
+                }
+            });
         }
 
         function setupSwitchListeners() {
-            for (let i = 1; i <= 8; i++) {
-                database.ref('esp32/relays/' + i).on('value', (snapshot) => {
-                    if (snapshot.exists()) {
-                        const value = snapshot.val();
-                        document.getElementById('switch' + i).checked = value === 0;
-                        if (value === 0) {
-                            lastSwitchOn = i;
-                        }
+        for (let i = 1; i <= 8; i++) {
+            database.ref('esp32/relays/' + i).on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const value = snapshot.val();
+                    document.getElementById('switch' + i).checked = value === 0;
+                    if (value === 0) {
+                        lastSwitchOn = i;
+                        updateCountdownDisplay(i);
                     } else {
-                        console.error("No data available for switch " + i);
+                        document.getElementById('switch' + i).checked = false; // Untoggle the switch if value is 1
                     }
-                });
-            }
+                } else {
+                    console.error("No data available for switch " + i);
+                }
+            });
         }
+    }
 
         function setupTimerListener() {
             database.ref('esp32/timer').on('value', (snapshot) => {
@@ -95,6 +145,12 @@
             }, 1000);
         }
 
+        function refreshCountdownDisplays() {
+            for (let i = 1; i <= 8; i++) {
+                updateCountdownDisplay(i);
+            }
+        }
+
         // Setup listeners when the page loads
         window.onload = function() {
             setupSwitchListeners();
@@ -102,9 +158,26 @@
             setupConnectionListener();
             // Update the "connected" file in Firebase
             database.ref('esp32/connected').set(1);
-            // Set default timer value to 15 minutes
-            document.getElementById('timerInput').value = "15";
+            // Retrieve and set the timer value from localStorage
+            const savedTimerValue = localStorage.getItem('cascadeTimer') || "15"; // Default to 15 if not set
+            document.getElementById('timerInput').value = savedTimerValue;
+            updateTimer2(); // Initialize timer2 with the saved value
+            document.getElementById('timerInput').addEventListener('input', updateTimer2); // Update timer2 on input change
+
+            // Start countdown if there's a saved countdown value
+            const savedCountdown = localStorage.getItem('countdown');
+            if (savedCountdown) {
+                startCountdown(parseInt(savedCountdown), lastSwitchOn);
+            }
+
+            // Refresh countdown displays every 20 seconds
+            setInterval(refreshCountdownDisplays, 20000);
         };
+
+        function updateTimer2() {
+            const timerValue = document.getElementById('timerInput').value;
+            database.ref('esp32/timer2').set(parseInt(timerValue) * 60);
+        }
     </script>
     <style>
         body {
@@ -159,53 +232,85 @@
     <div class="switch" style="font-size: 120%;">
         <input type="checkbox" id="switch1" onclick="sendSwitchState(1, this.checked)">
         <label for="switch1">Front Garden</label>
+
+        <span id="countdownDisplay1" style="margin-left: 10px; font-size: 80%; color: rgb(12, 11, 11); font-weight: bold;"></span>
+
     </div>
+
     <div class="switch" style="font-size: 120%;">
+
         <input type="checkbox" id="switch2" onclick="sendSwitchState(2, this.checked)">
         <label for="switch2">Side Garden 1</label>
+
+        <span id="countdownDisplay2" style="margin-left: 10px; font-size: 80%; color: rgb(0, 0, 0); font-weight: bold;"></span>
+
     </div>
     <div class="switch" style="font-size: 120%;">
         <input type="checkbox" id="switch3" onclick="sendSwitchState(3, this.checked)">
+
         <label for="switch3">Side Garden 2</label>
+
+        <span id="countdownDisplay3" style="margin-left: 10px; font-size: 80%; color: rgb(0, 0, 0); font-weight: bold;"></span>
     </div>
     <div class="switch" style="font-size: 120%;">
         <input type="checkbox" id="switch4" onclick="sendSwitchState(4, this.checked)">
         <label for="switch4">Back Garden 1</label>
+
+        <span id="countdownDisplay4" style="margin-left: 10px; font-size: 80%; color: rgb(0, 0, 0); font-weight: bold;"></span>
+
     </div>
     <div class="switch" style="font-size: 120%;">
+
         <input type="checkbox" id="switch5" onclick="sendSwitchState(5, this.checked)">
         <label for="switch5">Back Garden 2</label>
+
+        <span id="countdownDisplay5" style="margin-left: 10px; font-size: 80%; color: rgb(0, 0, 0); font-weight: bold;"></span>
+
     </div>
+
     <div class="switch" style="font-size: 120%;">
+
         <input type="checkbox" id="switch6" onclick="sendSwitchState(6, this.checked)">
+
         <label for="switch6">Back Lawn 1</label>
+
+        <span id="countdownDisplay6" style="margin-left: 10px; font-size: 80%; color: rgb(0, 0, 0); font-weight: bold;"></span>
     </div>
+
     <div class="switch" style="font-size: 120%;">
+
         <input type="checkbox" id="switch7" onclick="sendSwitchState(7, this.checked)">
         <label for="switch7">Back Lawn 2</label>
+
+        <span id="countdownDisplay7" style="margin-left: 10px; font-size: 80%; color: rgb(0, 0, 0); font-weight: bold;"></span>
+
     </div>
+
     <div class="switch" style="font-size: 120%;">
         <input type="checkbox" id="switch8" onclick="sendSwitchState(8, this.checked)">
         <label for="switch8">Side Lawn</label>
+
+        <span id="countdownDisplay8" style="margin-left: 10px; font-size: 80%; color: rgb(0, 0, 0); font-weight: bold;"></span>
+
     </div>
     <div>
-  <div style="line-height: 3;">&nbsp;</div>
-<select id="timerInput" style="border: 1px solid black;color: black; font-size: 110%; height: 30px; border-radius: 10px;">
-    <!-- Generate options from 1 to 60 minutes -->
-    <option value="5">5 minutes</option>
-    <option value="10">10 minutes</option>
-    <option value="15" selected>15 minutes</option> <!-- Default value -->
-    <option value="20">20 minutes</option>
-    <option value="25">25 minutes</option>
-    <option value="30">30 minutes</option>
-    <option value="35">35 minutes</option>
-    <option value="40">40 minutes</option>
-    <option value="45">45 minutes</option>
-    <option value="50">50 minutes</option>
-    <option value="55">55 minutes</option>
-    <option value="60">60 minutes</option>
-</select>
-<button style="border: 1px solid black;color: black; border-radius: 10px; font-size: 110%; height: 30px; margin-left: 2px;" onclick="sendTimerValue()">Set Cascade Timer</button>
+        <div style="line-height: 3;">&nbsp;</div>
+        <select id="timerInput" style="border: 1px solid black;color: black; font-size: 110%; height: 30px; border-radius: 10px;">
+            <!-- Generate options from 1 to 60 minutes -->
+            <option value="5">5 minutes</option>
+            <option value="10">10 minutes</option>
+            <option value="15" selected>15 minutes</option> <!-- Default value -->
+            <option value="20">20 minutes</option>
+            <option value="25">25 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="35">35 minutes</option>
+            <option value="40">40 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="50">50 minutes</option>
+            <option value="55">55 minutes</option>
+            <option value="60">60 minutes</option>
+        </select>
+        <button style="border: 1px solid black;color: black; border-radius: 10px; font-size: 110%; height: 30px; margin-left: 2px;" onclick="sendTimerValue()">Set Cascade Timer</button>
     </div>
 </body>
 </html>
